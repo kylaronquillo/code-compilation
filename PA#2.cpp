@@ -15,6 +15,7 @@ References:
 #include <string>
 #include <cctype>
 #include <cstdlib>
+#include <sstream>
 
 using namespace std;
 
@@ -23,6 +24,9 @@ struct Node {
     double data;
     Node* next;
 };
+
+Node* operatorExp = nullptr;
+Node* operandExp = nullptr;
 
 // function to check if stack is empty 
 bool isStackEmpty(Node* topStack) {
@@ -91,7 +95,7 @@ bool isValidExpression(const string& input) {
         if (isspace(c)) {
             continue;
         }
-        if (!isdigit(c) && c != '+' && c != '-' && c != '*' && c != '/' && c != '(' && c != ')') {
+        if (!isdigit(c) && c != '+' && c != '-' && c != '*' && c != '/' && c != '(' && c != ')' && c != '.') {
             return false;
         }
     }
@@ -103,27 +107,61 @@ bool isExpEmpty(const string& input){
     return input.empty();
 }
 
+// function that checks the operator used by the user for the expression
+void ansMath(char arithmeticOp, double operand1, double operand2){
+    if (arithmeticOp == '+') {
+        push(operandExp, operand1 + operand2);
+    }
+    else if (arithmeticOp == '-') {
+        push(operandExp, operand1 - operand2);
+    }
+    else if (arithmeticOp == '*') {
+        push(operandExp, operand1 * operand2);
+    }
+    else if (arithmeticOp == '/') {
+        if (operand2 == 0) { //checks if the divisor / operand2 is  0
+            cerr << "ERROR: Undefined. Cannot divide by zero.\n";
+            exit(1);
+        }
+        push(operandExp, operand1 / operand2);
+    }
+}
+
 // function to evaluate a mathematical expression
 double evaluateMathExpression(const string& input) {
-    Node* operatorExp = nullptr;
-    Node* operandExp = nullptr;
+    stringstream onebyone(input);
     bool inNumber = false;
-    double currentNumber = 0;
+    double currentNumber = 0.0;
+    bool isNegative = false;
+    char c;
 
-    for (char c : input) {
+    while (onebyone >> c) {
         if (isspace(c)) { // checks if a character of the input string is a space
             continue;
         }
-        else if (isdigit(c)) { // checks if a character of the input string is a digit
+        else if (isdigit(c) || c == '.') { // checks if a character of the input string is a digit
             inNumber = true;
-            currentNumber = currentNumber * 10 + (c - '0'); // current number is for two or more digit numbers
+            if (isdigit(c)) {
+                onebyone.putback(c);
+                onebyone >> currentNumber;
+            } else { // it's a decimal point
+                // Read the fractional part
+                double fraction = 0.1;
+                while (isdigit(onebyone.peek())) {
+                    onebyone >> c;
+                    currentNumber += (c - '0') * fraction;
+                    fraction *= 0.1;
+                }
+            }
+            if (isNegative) {
+                currentNumber = -currentNumber; 
+                isNegative = false;
+            }
+            push(operandExp, currentNumber);
+            inNumber = false;
+            currentNumber = 0.0;
         }
         else { // if character is not a space or digit
-            if (inNumber) { // must only enter this if the loop encounters an operator
-                push(operandExp, currentNumber);
-                inNumber = false;
-                currentNumber = 0;
-            }
             if (c == '(') { 
                 push(operatorExp, c);
             }
@@ -132,48 +170,25 @@ double evaluateMathExpression(const string& input) {
                     char arithmeticOp = pop(operatorExp);
                     double operand2 = pop(operandExp);
                     double operand1 = pop(operandExp);
-                    if (arithmeticOp == '+') {
-                        push(operandExp, operand1 + operand2);
-                    }
-                    else if (arithmeticOp == '-') {
-                        push(operandExp, operand1 - operand2);
-                    }
-                    else if (arithmeticOp == '*') {
-                        push(operandExp, operand1 * operand2);
-                    }
-                    else if (arithmeticOp == '/') {
-                        if (operand2 == 0) { //checks if the divisor / operand2 is  0
-                            cerr << "ERROR: Undefined. Cannot divide by zero.\n";
-                            exit(1);
-                        }
-                        push(operandExp, operand1 / operand2);
-                    }
+                    ansMath(arithmeticOp, operand1, operand2);
                 }
                 if (!isStackEmpty(operatorExp) && peek(operatorExp) == '(') {
                     pop(operatorExp);
                 }
             }
+            else if (c == '-' && isStackEmpty(operandExp)){ // for numbers who have negative signs at the beginning
+                isNegative = true;
+            }
             else if (c == '+' || c == '-' || c == '*' || c == '/') {
+                if (c == '-' && isStackEmpty(operatorExp) && isStackEmpty(operandExp)){
+                    cerr << "ERROR: Invalid Math Expression.\n";
+                    exit(1);
+                }
                 while (!isStackEmpty(operatorExp) && peek(operatorExp) != '(' && precedence(c) <= precedence(peek(operatorExp))) {
                     char arithmeticOp = pop(operatorExp);
                     double operand2 = pop(operandExp);
                     double operand1 = pop(operandExp);
-                    if (arithmeticOp == '+') {
-                        push(operandExp, operand1 + operand2);
-                    }
-                    else if (arithmeticOp == '-') {
-                        push(operandExp, operand1 - operand2);
-                    }
-                    else if (arithmeticOp == '*') {
-                        push(operandExp, operand1 * operand2);
-                    }
-                    else if (arithmeticOp == '/') {
-                        if (operand2 == 0) { //checks if the divisor / operand2 is  0
-                            cerr << "ERROR: Undefined. Cannot divide by zero.\n";
-                            exit(1);
-                        }
-                        push(operandExp, operand1 / operand2);
-                    }
+                    ansMath(arithmeticOp, operand1, operand2);
                 }
                 push(operatorExp, c);
             }
@@ -184,7 +199,7 @@ double evaluateMathExpression(const string& input) {
         }
     }
 
-     // process any remaining numbers and operators
+    // process any remaining numbers and operators
     if (inNumber) {
         push(operandExp, currentNumber);
     }
@@ -192,22 +207,7 @@ double evaluateMathExpression(const string& input) {
         char arithmeticOp = pop(operatorExp);
         double operand2 = pop(operandExp);
         double operand1 = pop(operandExp);
-        if (arithmeticOp == '+') {
-            push(operandExp, operand1 + operand2);
-        }
-        else if (arithmeticOp == '-') {
-            push(operandExp, operand1 - operand2);
-        }
-        else if (arithmeticOp == '*') {
-            push(operandExp, operand1 * operand2);
-        }
-        else if (arithmeticOp == '/') {
-            if (operand2 == 0) { //checks if the divisor / operand2 is  0
-                cerr << "ERROR: Undefined. Cannot divide by zero.\n";
-                exit(1);
-            }
-            push(operandExp, operand1 / operand2);
-        }
+        ansMath(arithmeticOp, operand1, operand2);
     }
 
     if (isStackEmpty(operandExp)) {
@@ -218,7 +218,6 @@ double evaluateMathExpression(const string& input) {
         return pop(operandExp); //return the answer
     }
 }
-
 int main() {
     string mathExpression;
 
