@@ -3,13 +3,14 @@ import java.util.Scanner;
 public class seatplanmakerv2 {
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
+
         layout l = new layout();
+        
+        // keep asking for layout until valid input
+        while (!setupLayout(l)) {}
 
-        while (!setupLayout(l)) {
-            // Continue looping until setupLayout returns true
-        }
-
-        l.displayLayout();
+        // display the layout
+        l.displayLayout(); 
 
         seat[] s = new seat[l.getRowNum() * (l.getLeftCol() + l.getRightCol())];
 
@@ -30,14 +31,13 @@ public class seatplanmakerv2 {
                 if (!s[wantSeat - 1].getStatus()) {
                     s[wantSeat - 1].setStatus(true);
                     //System.out.println("Seat " + wantSeat + " reserved!");
+                    l.displayLayout(s);
                 } else {
-                    System.out.println("SEAT TAKEN");
+                    System.out.println("SEAT TAKEN!"); System.out.println();
                 }
             } else {
-                System.out.println("Invalid Seat Number!");
+                System.out.println("Invalid Seat Number!"); System.out.println();
             }
-
-            l.displayLayout(s);
         }
 
         input.close();
@@ -46,6 +46,7 @@ public class seatplanmakerv2 {
     public static boolean setupLayout(layout l) {
         Scanner input = new Scanner(System.in);
 
+        // get input for row, left column, and right column
         System.out.print("Enter row#, left column#, right column#, separated by space: ");
         int row = input.nextInt();
         int leftC = input.nextInt();
@@ -53,10 +54,12 @@ public class seatplanmakerv2 {
 
         int sumCol = leftC + rightC;
 
+        // total number of seats must not exceed 99
         if (row * sumCol > 99) {
-            System.out.println("Total number of seats exceeds 99. Please follow the rule.");
+            System.out.println("Total number of seats should not exceed 99.");
             return false;
         } else {
+            // for the setter functions
             l.setRowNum(row);
             l.setLeftCol(leftC);
             l.setRightCol(rightC);
@@ -70,6 +73,7 @@ class layout {
     private int rightCol;
     private int leftCol;
 
+    // settters
     public void setRowNum(int rowNum) {
         this.rowNum = rowNum;
     }
@@ -86,6 +90,7 @@ class layout {
         return rowNum;
     }
 
+    //getters
     public int getRightCol() {
         return rightCol;
     }
@@ -94,23 +99,30 @@ class layout {
         return leftCol;
     }
 
+    //display initial layout
     public void displayLayout() {
         int number = 1;
         for (int i = 0; i < rowNum; i++) {
+            // for left column
             for (int j = 0; j < leftCol; j++) {
                 System.out.print("[" + formatNumber(number) + "] ");
                 number++;
             }
+
+            // put space in between to separate the 2 columns
             System.out.print("   ");
 
+            // for right column
             for (int k = 0; k < rightCol; k++) {
                 System.out.print("[" + formatNumber(number) + "] ");
                 number++;
             }
             System.out.println();
         }
+        System.out.println();
     }
 
+    //display layout for reservation
     public void displayLayout(seat[] seats) {
         int number = 1;
         int seatIndex = 0;
@@ -128,13 +140,16 @@ class layout {
             }
             System.out.println();
         }
+        System.out.println();
     }
 
+    // to avoid repetitive if else
     public String formatNumber(int number) {
         return (number < 10) ? "0" + number : String.valueOf(number);
     }
 }
 
+// for seat reservation
 class seat {
     private boolean status;
 
