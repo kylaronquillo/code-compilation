@@ -19,7 +19,8 @@ public class HackIngress {
 
             // add values in the array from the line
             for (int i = 0; i < n; i++) {
-                arr[i] = lineScanner.nextInt() + 1000;
+                int num = lineScanner.nextInt();
+                arr[i] = num + 1000;
             }
 
             int count = 1, tries = 1, cycle = arr[0] + 400, prevHack = arr[0];
@@ -38,7 +39,7 @@ public class HackIngress {
                     tries++;
                 }
             }
-
+            // peint count per line
             System.out.println(count);
             lineScanner.close();
         }
